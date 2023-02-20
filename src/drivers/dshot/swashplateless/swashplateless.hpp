@@ -9,7 +9,7 @@
 //angular velocity of propeller is positive in body frame (z-axis is downward)
 //positive blade must be aligned with the negative direction of body y-axis
 //define this situation as 0 degree, by changing the SENSOR_ROTOR_ANGLE_BIAS set 0 degree
-//so that the moment in 0 degree is aligned with the positive direction of body frame
+//so that the moment in 0 degree is aligned with the positive direction of body x-axis
 
 // On single_axis vehicle
 #define SENSOR_ROTOR_ANGLE_BIAS  (227.7)  //deg, encoder installation offset angle
