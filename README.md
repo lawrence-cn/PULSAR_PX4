@@ -1,100 +1,111 @@
-# PX4 Drone Autopilot
+# PULSAR (powered-flying ultra-underactuated LiDAR sensing aerial robot)
 
-[![Releases](https://img.shields.io/github/release/PX4/Firmware.svg)](https://github.com/PX4/Firmware/releases) [![DOI](https://zenodo.org/badge/22634/PX4/Firmware.svg)](https://zenodo.org/badge/latestdoi/22634/PX4/Firmware)
+## A self-rotating, single-actuated UAV with extended sensor field of view for autonomous navigation
 
-[![Nuttx Targets](https://github.com/PX4/Firmware/workflows/Nuttx%20Targets/badge.svg)](https://github.com/PX4/Firmware/actions?query=workflow%3A%22Nuttx+Targets%22?branch=master) [![SITL Tests](https://github.com/PX4/Firmware/workflows/SITL%20Tests/badge.svg?branch=master)](https://github.com/PX4/Firmware/actions?query=workflow%3A%22SITL+Tests%22)
+**Paper Link**: https://arxiv.org/
 
-[![Slack](https://px4-slack.herokuapp.com/badge.svg)](http://slack.px4.io)
+Click for the overview video.
 
-This repository holds the [PX4](http://px4.io) flight control solution for drones, with the main applications located in the [src/modules](https://github.com/PX4/Firmware/tree/master/src/modules) directory. It also contains the PX4 Drone Middleware Platform, which provides drivers and middleware to run drones.
+[![Video Demo](./img/out.png)](https://www.youtube.com/watch?v=eDkwGXCea7w)
 
-* Official Website: http://px4.io (License: BSD 3-clause, [LICENSE](https://github.com/PX4/Firmware/blob/master/LICENSE))
-* [Supported airframes](https://docs.px4.io/master/en/airframes/airframe_reference.html) ([portfolio](http://px4.io/#airframes)):
-  * [Multicopters](https://docs.px4.io/master/en/airframes/airframe_reference.html#copter)
-  * [Fixed wing](https://docs.px4.io/master/en/airframes/airframe_reference.html#plane)
-  * [VTOL](https://docs.px4.io/master/en/airframes/airframe_reference.html#vtol)
-  * many more experimental types (Rovers, Blimps, Boats, Submarines, Autogyros, etc)
-* Releases: [Downloads](https://github.com/PX4/Firmware/releases)
+## 1 Structure CAD files
+
+Including the CAD files of PULSAR and the swashplateless mechanism.
+
+## 2 Hardware deisgn files
+
+Including the hardware design files of the magnetic encoder.
+
+## 3 PX4 firmware of PULSAR
+
+### 3.1 Hardware configuration
++ Power the magnetic encoder and config it using a I2C bus, and make sure the 910-Hz PWM signal is outputed (e.g., verified by a oscilloscope).
++ Connect the power port of magnetic encoder to a 5V port of the Pixhawk 4 Mini.
++ Connect the PWM signal of magnetic encoder to the CAP1 port of the Pixhawk 4 Mini.
++ Connect the ESC (off-the-shelf ESC is ok as long as it supports dshot protocol) to the MAIN OUT 1 port of the Pixhawk 4 Mini.
+
+### 3.2 Software configuration
++ Clone the repository
++ Config your compile environment https://docs.px4.io/main/en/dev_setup/dev_env.html
++ Build the code and upload to Pixhawk 4 mini through USB connection
+```
+cd 3-PX4_Firmware/PULSAR_PX4
+make px4_fmu-v5_default upload
+```
++ Load the parameter file "PULSAR_PX4_parameters.params" to the Pixhawk 4 mini by QGroundControl or other tools (very important)
++ Keeping the USB connection, in the MAVLINK Console of QGroundControl, type
+```
+px4_cn start
+```
++ If the encoder works well, two rotor angles (angle_compensated and angle_raw) will be printed in the MAVLINK terminal. Rotate the positive blade of the swashplateless mechanism to align with the negative direction of the body y axis of PULSAR (facing to LiDAR's front side, right hand side is the nevative y axis), and record the value of the printed "angle_raw". 
++ Modified the MACRO (SENSOR_ROTOR_ANGLE_BIAS) with the recorded value (see 3.2.2).
++ Compile the code and upload again.
++ Keeping the same blade's position and starting the angle print in MAVLINK again, make sure the "angle_compensated" is close to 0 deg or 360 deg.
++ To stop the print, type
+```
+px4_cn stop
+```
 
 
-## PX4 Users
+### 3.3 Main modifications of the PX4 firmware
 
-The [PX4 User Guide](https://docs.px4.io/master/en/) explains how to assemble [supported vehicles](https://docs.px4.io/master/en/airframes/airframe_reference.html) and fly drones with PX4.
-See the [forum and chat](https://docs.px4.io/master/en/#support) if you need help!
+#### 3.3.1 PWM capture driver for magnetic encoder 
+The files are located in "src/drivers/pwm_input". Please make sure that the encoder 910-Hz PWM signal is connected to the CAP1 of the Pixhawk 4 Mini. Changing the frequency should also modify the timer frequency in "PULSAR_PX4/src/drivers/pwm_input/pwm_input.cpp".
 
+#### 3.3.2 Mixer of PULSAR
+The mixer files are located in the "PULSAR_PX4/src/drivers/dshot/swashplateless".
 
-## PX4 Developers
+SENSOR_ROTOR_ANGLE_BIAS (unit is degree) is used for compensating the encoder installation offset angle and it must be set properly.
 
-This [Developer Guide](https://dev.px4.io/) is for software developers who want to modify the flight stack and middleware (e.g. to add new flight modes), hardware integrators who want to support new flight controller boards and peripherals, and anyone who wants to get PX4 working on a new (unsupported) airframe/vehicle.
+MOTOR_DELAY_ANLGE_BIAS (unit is radian) is used for compensating the lag angle of the swashplateless mechanism. This value is different when using different motor or propeller and can be determined on a test stand with 6-axis force sensor by analyzing the moment data. If you use the propulsion system same as PULSAR (i.e., T-MOTOR MN5006 KV450 and MF1302 propeller), you don't need to change this value.
 
-Developers should read the [Guide for Contributions](https://dev.px4.io/master/en/contribute/).
-See the [forum and chat](https://dev.px4.io/master/en/#support) if you need help!
-
-
-### Weekly Dev Call
-
-The PX4 Dev Team syncs up on a [weekly dev call](https://dev.px4.io/master/en/contribute/#dev_call).
-
-> **Note** The dev call is open to all interested developers (not just the core dev team). This is a great opportunity to meet the team and contribute to the ongoing development of the platform. It includes a QA session for newcomers. All regular calls are listed in the [Dronecode calendar](https://www.dronecode.org/calendar/).
+The data of swashplateless mechanism are published for logging.
 
 
-## Maintenance Team
+#### 3.3.3 The repalcement of throttle output
+The repalcement is conducted in "PULSAR_PX4/src/drivers/dshot/dshot.cpp".
+Please make sure that the ESC signal wire is connected to the MAIN OUT1 of the Pixhawk 4 Mini. The dshot has been enabled if you had loaded the parameter file into the Pixhawk 4 mini.
 
-  * Project: Founder - [Lorenz Meier](https://github.com/LorenzMeier), Architecture: [Daniel Agar](https://github.com/dagar)
-    * [Dev Call](https://github.com/PX4/Firmware/labels/devcall) - [Ramon Roche](https://github.com/mrpollo)
-  * Communication Architecture
-    * [Beat Kueng](https://github.com/bkueng)
-    * [Julian Oes](https://github.com/JulianOes)
-  * UI in QGroundControl
-    * [Gus Grubba](https://github.com/dogmaphobic)
-  * [Multicopter Flight Control](https://github.com/PX4/Firmware/labels/multicopter)
-    * [Mathieu Bresciani](https://github.com/bresch)
-  * [Multicopter Software Architecture](https://github.com/PX4/Firmware/labels/multicopter)
-    * [Matthias Grob](https://github.com/MaEtUgR)
-  * [VTOL Flight Control](https://github.com/PX4/Firmware/labels/vtol)
-    * [Roman Bapst](https://github.com/RomanBapst)
-  * [Fixed Wing Flight Control](https://github.com/PX4/Firmware/labels/fixedwing)
-    * [Roman Bapst](https://github.com/RomanBapst)
-  * OS / NuttX [David Sidrane](https://github.com/davids5)
-  * Driver Architecture [Daniel Agar](https://github.com/dagar)
-  * Commander Architecture [Julian Oes](https://github.com/julianoes)
-  * [UAVCAN](https://github.com/PX4/Firmware/labels/uavcan) [Daniel Agar](https://github.com/dagar)
-  * [State Estimation](https://github.com/PX4/Firmware/issues?q=is%3Aopen+is%3Aissue+label%3A%22state+estimation%22) - [Paul Riseborough](https://github.com/priseborough)
-  * Vision based navigation
-    * [Julian Kent](https://github.com/jkflying)
-  * Obstacle Avoidance - [Martina Rivizzigno](https://github.com/mrivi)
-  * RTPS/ROS2 Interface - [Nuno Marques](https://github.com/TSC21)
 
-See also [maintainers list](https://px4.io/community/maintainers/) (px4.io) and the [contributors list](https://github.com/PX4/Firmware/graphs/contributors) (Github).
+#### 3.3.4 The attitude controller of PULSAR
+The attitude controller is implemented in "PULSAR_PX4/src/modules/mc_att_control/AttitudeControl/AttitudeControl.cpp".
+The attitude setpoint and feedback are published for data logging.
 
-## Supported Hardware
 
-This repository contains code supporting these boards:
-  * FMUv2
-    * [Pixhawk](https://docs.px4.io/master/en/flight_controller/pixhawk.html)
-    * [Pixfalcon](https://docs.px4.io/master/en/flight_controller/pixfalcon.html)
-  * FMUv3
-    * [Pixhawk 2](https://docs.px4.io/master/en/flight_controller/pixhawk-2.html)
-    * [Pixhawk Mini](https://docs.px4.io/master/en/flight_controller/pixhawk_mini.html)
-    * [CUAV Pixhack v3](https://docs.px4.io/master/en/flight_controller/pixhack_v3.html)
-  * FMUv4
-    * [Pixracer](https://docs.px4.io/master/en/flight_controller/pixracer.html)
-    * [Pixhawk 3 Pro](https://docs.px4.io/master/en/flight_controller/pixhawk3_pro.html)
-  * FMUv5 (ARM Cortex M7)
-    * [Pixhawk 4](https://docs.px4.io/master/en/flight_controller/pixhawk4.html)
-    * [Pixhawk 4 mini](https://docs.px4.io/master/en/flight_controller/pixhawk4_mini.html)
-    * [CUAV V5+](https://docs.px4.io/master/en/flight_controller/cuav_v5_plus.html)
-    * [CUAV V5 nano](https://docs.px4.io/master/en/flight_controller/cuav_v5_nano.html)
-  * [Airmind MindPX V2.8](http://www.mindpx.net/assets/accessories/UserGuide_MindPX.pdf)
-  * [Airmind MindRacer V1.2](http://mindpx.net/assets/accessories/mindracer_user_guide_v1.2.pdf)
-  * [Bitcraze Crazyflie 2.0](https://docs.px4.io/master/en/flight_controller/crazyflie2.html)
-  * [Omnibus F4 SD](https://docs.px4.io/master/en/flight_controller/omnibus_f4_sd.html)
-  * [Holybro Durandal](https://docs.px4.io/master/en/flight_controller/durandal.html)
-  * [Holybro Kakute F7](https://docs.px4.io/master/en/flight_controller/kakutef7.html)
-  * [Raspberry PI with Navio 2](https://docs.px4.io/master/en/flight_controller/raspberry_pi_navio2.html)
+#### 3.3.5 The angular velocity controller of PULSAR
+The angular velocity controller is implemented in "PULSAR_PX4/src/modules/sa_rate_control_me/sa_rate_control_me_main.cpp".
+The angular velocity setpoint and feedback both in world frame are published for data logging.
 
-Additional information about supported hardware can be found in [PX4 user Guide > Autopilot Hardware](https://docs.px4.io/master/en/flight_controller/).
 
-## Project Roadmap
+#### 3.3.6 The position controller of PULSAR
+There are some modifications in "PULSAR_PX4/src/modules/mc_pos_control" and "PULSAR_PX4/src/lib/flight_tasks".
+This ensure the position command from remote controller (RC) is available in world frame rather than in body frame.
 
-A high level project roadmap is available [here](https://www.dronecode.org/roadmap/).
+#### 3.3.7 Logging topics
+Some ulog topics are added in "PULSAR_PX4/src/modules/logger/logged_topics.cpp" and "PULSAR_PX4/msg".
+
+## 4 Software modules
+
+### 4.1 FAST-LIO2 
+Different from the standard version of FAST-LIO2, the FAST-LIO2 in this repository contains coordinate transformations of both odometry and point clouds because the LiDAR (Livox AVIA) is installed on PULSAR with a 90-degree rotated orientation. Refer to https://github.com/hku-mars/FAST_LIO for more configuration details.
+
+To transmit the odometry from FAST-LIO2 to PX4, [MAVROS](https://github.com/mavlink/mavros) should be run with FAST-LIO2 at the same time
+```
+roslaunch mavros px4.launch
+roslaunch fastlio mapping_avia_indoor.launch  # indoor environment
+roslaunch fastlio mapping_avia_outdoor.launch  # outdoor environment
+```
+
+In addition, [Point-LIO](https://github.com/hku-mars/Point-LIO) is more suitable for PULSAR since it can handle higer self-rotation rate.
+
+
+### 4.2 Planner
+The new version of the planner used in PULSAR is in https://github.com/hku-mars/dyn_small_obs_avoidance.
+Other planners can also be used for PULSAR if they can receive the odometry and point clouds provided by FAST-LIO2.
+
+
+### 4.3 Incremental kd-forest
+The incremental kd-forest is a data strcuture which contains many [ikd-trees](https://github.com/hku-mars/ikd-Tree).
+You may contact [Yixi Cai](https://github.com/Ecstasy-EC) if there is any issue.
+
+
