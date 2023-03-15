@@ -1,6 +1,3 @@
-//
-// Created by Lawrence Chen on 2021/4/17.
-//
 
 #ifndef PX4_SWASHPLATELESS_HPP
 #define PX4_SWASHPLATELESS_HPP
@@ -29,9 +26,7 @@
 //#define MOTOR_DELAY_ANLGE_BIAS   (1.047)  //60 deg, 1200-1300 dshot, MF1604, no lidar pulsar, 760g
 //#define MOTOR_DELAY_ANLGE_BIAS (0.0) //for debug
 
-
-
-#define SWASH_SIN_DEADZONE (10)
+#define SWASH_SIN_DEADZONE (0)
 
 typedef struct
 {
@@ -118,6 +113,7 @@ typedef struct
 }SINGLE_AXIS_PROP_Def;
 
 float motor_angle_cal(uint32_t pwm_now, uint32_t pwm_max, uint32_t pwm_min, float angle_bias);
+float motor_angle_cal_raw(uint32_t pwm_now, uint32_t pwm_max, uint32_t pwm_min);
 uint16_t speed_control_for_dshot(bool on_flag);
 
 

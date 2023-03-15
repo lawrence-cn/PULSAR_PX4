@@ -30,8 +30,7 @@
 
 //using namespace matrix;
 
-//#define THROTTLE_MAX  2047
-#define THROTTLE_MAX  1800 //original is 2000
+#define THROTTLE_MAX  1800 //maximum is 2047
 #define THROTTLE_MIN  50
 #define LOG_ONCE_LEN  5
 #define RC_SWITCH_THROTTLE 1000 //400,600,800,1000
@@ -181,6 +180,20 @@ float motor_angle_cal(uint32_t pwm_now, uint32_t pwm_max, uint32_t pwm_min, floa
     angle -= angle_bias;
     //remap to 0~360 deg
     if(angle < 0) angle += 360;
+    return angle;
+}
+
+float motor_angle_cal_raw(uint32_t pwm_now, uint32_t pwm_max, uint32_t pwm_min)
+{
+    pwm_cap.width_range = abs(pwm_cap.width_max - pwm_cap.width_min);
+    float angle = float(pwm_now - pwm_min) / float(pwm_cap.width_range) * 360.0f;
+    if(angle > 360)
+        angle = 360;
+    else if(angle < 0)
+        angle = 0;
+    //reverse the angle direction
+    //let the angle increases when clockwise rotation
+    angle = 360 - angle;
     return angle;
 }
 

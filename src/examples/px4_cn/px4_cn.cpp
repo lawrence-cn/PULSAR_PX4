@@ -198,10 +198,12 @@ void PX4cn::run()
         {
             subscribe_var.pwm_pulse_width = pwm_input_data.pulse_width;
             subscribe_var.pwm_period = pwm_input_data.period;
-            float angle = motor_angle_cal(subscribe_var.pwm_pulse_width,
+            float angle_compensated = motor_angle_cal(subscribe_var.pwm_pulse_width,
                                           SENDOR_PWM_MAX, SENDOR_PWM_MIN, SENSOR_ROTOR_ANGLE_BIAS);
-            PX4_INFO("width = %d, period = %d, angle = %f",
-                     subscribe_var.pwm_pulse_width, subscribe_var.pwm_period, angle);
+            float angle_raw = motor_angle_cal_raw(subscribe_var.pwm_pulse_width,
+                                                 SENDOR_PWM_MAX, SENDOR_PWM_MIN);
+            PX4_INFO("width = %d, period = %d, angle_compensated = %.3f deg, angle_raw = %.3f deg",
+                     subscribe_var.pwm_pulse_width, subscribe_var.pwm_period, angle_compensated, angle_raw);
         }
 #endif
 
